@@ -40,6 +40,12 @@ PATH_TO_METADATA = {
     'stress': os.path.join(BASE_PATH, 'c3_muse_stress_2022/metadata')
 }
 
+PATH_TO_RAWDATA = {
+    'humor': os.path.join(BASE_PATH, 'c1_muse_humor/raw_data'),
+    'reaction':os.path.join(BASE_PATH, 'c2_muse_reaction'),
+    'stress': os.path.join(BASE_PATH, 'c3_muse_stress_2022/raw_data')
+}
+
 PARTITION_FILES = {task: os.path.join(path_to_meta, 'partition.csv') for task,path_to_meta in PATH_TO_METADATA.items()}
 
 REACTION_LABELS = ['Adoration', 'Amusement', 'Anxiety', 'Disgust', 'Empathic-Pain', 'Fear', 'Surprise']
