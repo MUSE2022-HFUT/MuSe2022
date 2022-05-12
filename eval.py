@@ -117,7 +117,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
                     print('No labels available, no evaluation')
                     return np.nan, np.nan
 
-            batch_size = features.size(0) if task!='stress' else 1
+            batch_size = features[0].size(0) if task!='stress' else 1
 
             if use_gpu:
                 model.cuda()
@@ -125,7 +125,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
                 feature_lens = feature_lens.cuda()
                 labels = labels.cuda()
 
-            preds = model(features, feature_lens)
+            preds = model(features)
 
             # only relevant for stress
             feature_lens = feature_lens.detach().cpu().tolist()

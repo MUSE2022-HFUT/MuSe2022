@@ -12,7 +12,7 @@ import config
 from utils import Logger, seed_worker, log_results
 from train import train_model
 from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons 
-from model import Model
+from model import TEMMA
 from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss
 from dataset import MuSeDataset, custom_collate_fn
 from data_parser import load_data
@@ -22,23 +22,22 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='MuSe 2022.')
 
-    parser.add_argument('--task', type=str, required=True, choices=['humor', 'reaction', 'stress'],
+    parser.add_argument('--task', type=str, default='humor', choices=['humor', 'reaction', 'stress'],
                         help='Specify the task (humour, reaction, stress).')
-    parser.add_argument('--feature', required=True,
-                        help='Specify the features used (only one).')
+    parser.add_argument('--feature', nargs='+', default=['egemaps', 'bert-4-sentence-level', 'vggface2'], help='Specify the features used (only one).')
     parser.add_argument('--emo_dim', default='physio-arousal',
                         help='Specify the emotion dimension, only relevant for stress (default: arousal).')
-    parser.add_argument('--normalize', action='store_true',
+    parser.add_argument('--normalize', default=False, action='store_true',
                         help='Specify whether to normalize features (default: False).')
     parser.add_argument('--win_len', type=int, default=200,
                         help='Specify the window length for segmentation (default: 200 frames).')
     parser.add_argument('--hop_len', type=int, default=100,
                         help='Specify the hop length to for segmentation (default: 100 frames).')
-    parser.add_argument('--d_rnn', type=int, default=64,
+    parser.add_argument('--d_rnn', type=int, default=256,
                         help='Specify the number of hidden states in the RNN (default: 64).')
-    parser.add_argument('--rnn_n_layers', type=int, default=1,
+    parser.add_argument('--rnn_n_layers', type=int, default=4,
                         help='Specify the number of layers for the RNN (default: 1).')
-    parser.add_argument('--rnn_bi', action='store_true',
+    parser.add_argument('--rnn_bi', default=True, action='store_true',
                         help='Specify whether the RNN is bidirectional or not (default: False).')
     parser.add_argument('--d_fc_out', type=int, default=64,
                         help='Specify the number of hidden neurons in the output layer (default: 64).')
@@ -60,7 +59,7 @@ def parse_args():
     parser.add_argument('--reduce_lr_patience', type=int, default=5, help='Patience for reduction of learning rate')
     parser.add_argument('--use_gpu', action='store_true',
                         help='Specify whether to use gpu for training (default: False).')
-    parser.add_argument('--cache', action='store_true',
+    parser.add_argument('--cache', default=True, action='store_true',
                         help='Specify whether to cache data as pickle file (default: False).')
     parser.add_argument('--save_path', type=str, default='preds',
                         help='Specify path where to save the predictions (default: preds).')
@@ -71,6 +70,27 @@ def parse_args():
                         help='L2-Penalty')
     parser.add_argument('--eval_model', type=str, default=None,
                         help='Specify model which is to be evaluated; no training with this option (default: False).')
+
+    # parser.add_argument('--mask_a_length', type=str, default='50,50')
+    # parser.add_argument('--mask_b_length', type=str, default='10,10')
+    parser.add_argument('--block_num', type=int, default=4)
+    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--dropout_mmatten', type=float, default=0.5)
+    parser.add_argument('--dropout_mtatten', type=float, default=0.2)
+    parser.add_argument('--dropout_ff', type=float, default=0.2)
+    parser.add_argument('--dropout_subconnect', type=float, default=0.2)
+    parser.add_argument('--dropout_position', type=float, default=0.2)
+    parser.add_argument('--dropout_embed', type=float, default=0.2)
+    parser.add_argument('--dropout_fc', type=float, default=0.2)
+    parser.add_argument('--h', type=int, default=4)
+    parser.add_argument('--h_mma', type=int, default=4)
+    parser.add_argument('--d_model', type=int, default=128)
+    parser.add_argument('--d_ff', type=int, default=256)
+    parser.add_argument('--modal_num', type=int, default=2)
+    parser.add_argument('--embed', type=str, default='temporal')
+    parser.add_argument('--levels', type=int, default=5)
+    parser.add_argument('--ksize', type=int, default=3)
+    parser.add_argument('--ntarget', type=int, default=1)
 
     args = parser.parse_args()
     if not (args.result_csv is None) and args.predict:
@@ -107,10 +127,12 @@ def main(args):
     # emo_dim only relevant for stress
     args.emo_dim = args.emo_dim if args.task=='stress' else ''
     print('Loading data ...')
-    data = load_data(args.task, args.paths, args.feature, args.emo_dim, args.normalize,
-                     args.win_len, args.hop_len, save=args.cache)
+    data = []
+    for name in args.feature:
+        data.append(load_data(args.task, args.paths, name, args.emo_dim, args.normalize,
+                     args.win_len, args.hop_len, save=args.cache))
     data_loader = {}
-    for partition in data.keys():  # one DataLoader for each partition
+    for partition in data[0].keys():  # one DataLoader for each partition
         set = MuSeDataset(data, partition)
         batch_size = args.batch_size if partition == 'train' else (1 if args.task=='stress' else 2*args.batch_size)
         shuffle = True if partition == 'train' else False  # shuffle only for train partition
@@ -132,7 +154,7 @@ def main(args):
         for seed in seeds:
             torch.manual_seed(seed)
 
-            model = Model(args)
+            model = TEMMA(args, args.d_in)
 
             print('=' * 50)
             print(f'Training model... [seed {seed}] for at most {args.epochs} epochs')
@@ -194,10 +216,11 @@ def main(args):
 if __name__ == '__main__':
     args = parse_args()
 
+    args.name = 'TEMMA-' + "+".join(args.feature)
     args.log_file_name = '{}_[{}]_[{}]_[{}_{}_{}_{}]_[{}_{}]'.format(
         datetime.now(tz=tz.gettz()).strftime("%Y-%m-%d-%H-%M"), args.feature, args.emo_dim,
         args.d_rnn, args.rnn_n_layers, args.rnn_bi, args.d_fc_out, args.lr, args.batch_size) if args.task == 'stress' else \
-        '{}_[{}]_[{}_{}_{}_{}]_[{}_{}]'.format(datetime.now(tz=tz.gettz()).strftime("%Y-%m-%d-%H-%M"), args.feature.replace(os.path.sep, "-"),
+        '{}_[{}]_[{}_{}_{}_{}]_[{}_{}]'.format(datetime.now(tz=tz.gettz()).strftime("%Y-%m-%d-%H-%M"), args.name,
                                                  args.d_rnn, args.rnn_n_layers, args.rnn_bi, args.d_fc_out, args.lr,args.batch_size)
 
     # adjust your paths in config.py
@@ -215,6 +238,7 @@ if __name__ == '__main__':
                        'partition': config.PARTITION_FILES[args.task]})
 
     sys.stdout = Logger(os.path.join(args.paths['log'], args.log_file_name + '.txt'))
+    print(args)
     print(' '.join(sys.argv))
 
     main(args)

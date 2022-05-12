@@ -8,29 +8,35 @@ class MuSeDataset(Dataset):
     def __init__(self, data, partition):
         super(MuSeDataset, self).__init__()
         self.partition = partition
-        features, labels = data[partition]['feature'], data[partition]['label']
-        metas = data[partition]['meta']
-        self.feature_dim = features[0].shape[-1]
-        self.n_samples = len(features)
+        features = []
+        for i in range(len(data)):
+            features.append(data[i][partition]['feature'])
+        labels = data[0][partition]['label']
+        metas = data[0][partition]['meta']
+        self.feature_dim = [feature[0].shape[-1] for feature in features]
+        self.n_samples = len(features[0])
 
         feature_lens = []
         label_lens = []
         for feature in features:
-            feature_lens.append(len(feature))
+            feature_len = []
+            for feature_item in feature:
+                feature_len.append(len(feature_item))
+            feature_lens.append(feature_len)
         for label in labels:
             if label.ndim == 1:
                 label_lens.append(1)
             else:
                 label_lens.append(label.shape[0])
-        max_feature_len = np.max(np.array(feature_lens))
+        max_feature_len = [np.max(np.array(feature_len)) for feature_len in feature_lens]
         max_label_len = np.max(np.array(label_lens))
         if max_label_len > 1:
             assert(max_feature_len==max_label_len)
 
-        self.feature_lens = torch.tensor(feature_lens)
+        self.feature_lens = [torch.tensor(feature_len) for feature_len in feature_lens]
 
-        features = [np.pad(f, pad_width=((0, max_feature_len-f.shape[0]),(0,0))) for f in features]
-        self.features = [torch.tensor(f, dtype=torch.float) for f in features]
+        features = [[np.pad(f, pad_width=((0, max_feature_len[i]-f.shape[0]),(0,0))) for f in features[i]] for i in range(len(features))]
+        self.features = [[torch.tensor(f, dtype=torch.float) for f in feature] for feature in features]
         # if n-to-n task like stress
         if max_label_len > 1:
             labels = [np.pad(l, pad_width=((0, max_label_len-l.shape[0]),(0,0))) for l in labels]
@@ -56,12 +62,12 @@ class MuSeDataset(Dataset):
             label: tensor of corresponding label(s) (shape 1 for n-to-1, else (seq_len,1))
             meta: list of lists containing corresponding meta data
         '''
-        feature = self.features[idx]
-        feature_len = self.feature_lens[idx]
+        feature = [feature[idx] for feature in self.features]
+        feature_len = [feature_len[idx] for feature_len in self.feature_lens]
         label = self.labels[idx]
         meta = self.metas[idx]
 
-        sample = feature, feature_len, label, meta
+        sample = feature, feature_len[0], label, meta
         return sample
 
 

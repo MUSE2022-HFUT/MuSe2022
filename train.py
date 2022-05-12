@@ -18,7 +18,7 @@ def train(model, train_loader, optimizer, loss_fn, use_gpu=False):
 
     for batch, batch_data in enumerate(train_loader, 1):
         features, feature_lens, labels, metas = batch_data
-        batch_size = features.size(0)
+        batch_size = features[0].size(0)
 
         if use_gpu:
             features = features.cuda()
@@ -27,7 +27,7 @@ def train(model, train_loader, optimizer, loss_fn, use_gpu=False):
 
         optimizer.zero_grad()
 
-        preds = model(features, feature_lens)
+        preds = model(features)
 
         loss = loss_fn(preds.squeeze(-1), labels.squeeze(-1), feature_lens)
 
@@ -56,9 +56,11 @@ def train_model(task, model, data_loader, epochs, lr, model_path, current_seed, 
                 eval_metric_str, early_stopping_patience, reduce_lr_patience, regularization=0.0):
     train_loader, val_loader, test_loader = data_loader['train'], data_loader['devel'], data_loader['test']
 
+    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('number of params:', n_parameters)
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=regularization)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', patience=reduce_lr_patience,
-                                                        factor=0.5, min_lr=1e-5, verbose=True)
+                                                         factor=0.5, min_lr=1e-5, verbose=True)
     best_val_loss = float('inf')
     best_val_score = -1
     best_model_file = ''
