@@ -121,7 +121,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
 
             if use_gpu:
                 model.cuda()
-                features = features.cuda()
+                features = [feat.cuda() for feat in features]
                 feature_lens = feature_lens.cuda()
                 labels = labels.cuda()
 

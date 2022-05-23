@@ -1,3 +1,4 @@
+
 import time
 import os
 import numpy as np
@@ -21,7 +22,7 @@ def train(model, train_loader, optimizer, loss_fn, use_gpu=False):
         batch_size = features[0].size(0)
 
         if use_gpu:
-            features = features.cuda()
+            features = [feat.cuda() for feat in features]
             feature_lens = feature_lens.cuda()
             labels = labels.cuda()
 
