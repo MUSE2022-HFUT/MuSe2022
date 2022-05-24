@@ -116,6 +116,8 @@ def load_humor_subject(feature, subject_id, normalizer):
         end = y['timestamp_end']
         segment_id = y['segment_id']
         segment_features = feature_df[feature_df.segment_id == segment_id]
+        if len(segment_features)==0:
+            segment_features= feature_df[feature_df.segment_id == str('\''+segment_id+'\'')]
         label_features = segment_features[(segment_features.timestamp >= start) &
                                               (segment_features.timestamp < end)].iloc[:,feature_idx:].values
         # imputation?
