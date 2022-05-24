@@ -1,0 +1,1 @@
+## affectnet7_best_acc0.6527.pth.tar [link](https://drive.google.com/file/d/1ZrsV1Fn5IqxAvKRaNqlczSuZalfQfp80/view?usp=sharing)
