@@ -29,6 +29,7 @@ class MuSeDataset(Dataset):
             else:
                 label_lens.append(label.shape[0])
         max_feature_len = [np.max(np.array(feature_len)) for feature_len in feature_lens]
+        self.feature_len_in_one_step = np.max(np.array(max_feature_len))
         max_label_len = np.max(np.array(label_lens))
         if max_label_len > 1:
             assert(max_feature_len==max_label_len)
@@ -44,10 +45,12 @@ class MuSeDataset(Dataset):
         self.metas = [np.pad(meta, pad_width=((0,max_label_len-meta.shape[0]),(0,0)), mode='empty') for meta in metas]
 
         self.metas = [m.astype(np.object).tolist() for m in self.metas]
-        pass
 
     def get_feature_dim(self):
         return self.feature_dim
+
+    def get_feature_len_in_one_step(self):
+        return self.feature_len_in_one_step
 
     def __len__(self):
         return self.n_samples

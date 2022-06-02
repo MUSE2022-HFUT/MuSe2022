@@ -396,7 +396,7 @@ class TE(nn.Module):
 
 class TEMMA(nn.Module):
 
-    def __init__(self, opts, num_features):
+    def __init__(self, opts, num_features, len_feature):
         super(TEMMA, self).__init__()
 
         self.modal_num = len(num_features)
@@ -432,7 +432,7 @@ class TEMMA(nn.Module):
 
         self.temma = MultiModalEncoder(multimodal_encoder_layer, self.N, self.modal_num)
         self.regress = nn.Sequential(
-            nn.Linear(self.d_model * self.modal_num * 4, self.d_model * self.modal_num // 2),
+            nn.Linear(self.d_model * self.modal_num * len_feature, self.d_model * self.modal_num // 2),
             nn.ReLU(),
             nn.Linear(self.d_model * self.modal_num // 2, opts.ntarget),
         )
