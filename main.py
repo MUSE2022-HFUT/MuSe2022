@@ -86,7 +86,6 @@ def parse_args():
     parser.add_argument('--h_mma', type=int, default=4)
     parser.add_argument('--d_model', type=int, default=128)
     parser.add_argument('--d_ff', type=int, default=256)
-    parser.add_argument('--modal_num', type=int, default=2)
     parser.add_argument('--embed', type=str, default='temporal')
     parser.add_argument('--levels', type=int, default=5)
     parser.add_argument('--ksize', type=int, default=3)
@@ -154,7 +153,7 @@ def main(args):
         for seed in seeds:
             torch.manual_seed(seed)
 
-            model = TEMMA(args, args.d_in)
+            model = TEMMA(args, args.d_in, data_loader['train'].dataset.get_feature_len_in_one_step())
 
             print('=' * 50)
             print(f'Training model... [seed {seed}] for at most {args.epochs} epochs')
