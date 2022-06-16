@@ -18,7 +18,7 @@ def train(model, train_loader, optimizer, loss_fn, use_gpu=False):
         model.cuda()
 
     for batch, batch_data in enumerate(train_loader, 1):
-        features, feature_lens, labels, metas = batch_data
+        features, feature_lens, labels, detects, metas = batch_data
         batch_size = features[0].size(0)
 
         if use_gpu:

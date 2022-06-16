@@ -34,6 +34,10 @@ PATH_TO_LABELS = {
     'stress': os.path.join(BASE_PATH, 'c3_muse_stress_2022/label_segments')
 }
 
+PATH_TO_DETECT = {
+    'humor': os.path.join(BASE_PATH, 'c1_muse_humor/detect_segments'),
+}
+
 PATH_TO_METADATA = {
     'humor': os.path.join(BASE_PATH, 'c1_muse_humor/metadata'),
     'reaction':os.path.join(BASE_PATH, 'c2_muse_reaction'),

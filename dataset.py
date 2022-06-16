@@ -12,6 +12,7 @@ class MuSeDataset(Dataset):
         for i in range(len(data)):
             features.append(data[i][partition]['feature'])
         labels = data[0][partition]['label']
+        detects = data[0][partition]['detect']
         metas = data[0][partition]['meta']
         self.feature_dim = [feature[0].shape[-1] for feature in features]
         self.n_samples = len(features[0])
@@ -30,6 +31,10 @@ class MuSeDataset(Dataset):
                 label_lens.append(label.shape[0])
         max_feature_len = [np.max(np.array(feature_len)) for feature_len in feature_lens]
         self.feature_len_in_one_step = np.max(np.array(max_feature_len))
+        if self.feature_len_in_one_step > 4:
+            index = np.argmax(feature_lens[0])
+            print(feature_lens[0][index])
+            print(metas[index])
         max_label_len = np.max(np.array(label_lens))
         if max_label_len > 1:
             assert(max_feature_len==max_label_len)
@@ -42,6 +47,7 @@ class MuSeDataset(Dataset):
         if max_label_len > 1:
             labels = [np.pad(l, pad_width=((0, max_label_len-l.shape[0]),(0,0))) for l in labels]
         self.labels = [torch.tensor(l, dtype=torch.float) for l in labels]
+        self.detects = [torch.tensor(l, dtype=torch.float) for l in detects]
         self.metas = [np.pad(meta, pad_width=((0,max_label_len-meta.shape[0]),(0,0)), mode='empty') for meta in metas]
 
         self.metas = [m.astype(np.object).tolist() for m in self.metas]
@@ -68,9 +74,10 @@ class MuSeDataset(Dataset):
         feature = [feature[idx] for feature in self.features]
         feature_len = [feature_len[idx] for feature_len in self.feature_lens]
         label = self.labels[idx]
+        detect = self.detects[idx]
         meta = self.metas[idx]
 
-        sample = feature, feature_len[0], label, meta
+        sample = feature, feature_len[0], label, detect, meta
         return sample
 
 
@@ -80,8 +87,8 @@ def custom_collate_fn(data):
     :param data:
     :return:
     '''
-    tensors = [d[:3] for d in data]
-    np_arrs = [d[3] for d in data]
-    coll_features, coll_feature_lens, coll_labels = default_collate(tensors)
+    tensors = [d[:4] for d in data]
+    np_arrs = [d[4] for d in data]
+    coll_features, coll_feature_lens, coll_labels, coll_detect = default_collate(tensors)
     np_arrs_coll = np.row_stack(np_arrs)
-    return coll_features, coll_feature_lens, coll_labels, np_arrs_coll
+    return coll_features, coll_feature_lens, coll_labels, coll_detect, np_arrs_coll

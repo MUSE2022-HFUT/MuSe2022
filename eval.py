@@ -111,7 +111,7 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
     model.eval()
     with torch.no_grad():
         for batch, batch_data in enumerate(data_loader, 1):
-            features, feature_lens, labels, metas = batch_data
+            features, feature_lens, labels, detects, metas = batch_data
             if predict is not True:
                 if torch.any(torch.isnan(labels)):
                     print('No labels available, no evaluation')
@@ -126,6 +126,9 @@ def evaluate(task, model, data_loader, loss_fn, eval_fn, use_gpu=False, predict=
                 labels = labels.cuda()
 
             preds = model(features)
+            for i in range(0, len(detects)):
+                if detects[i] == 1:
+                    preds[i] = 1
 
             # only relevant for stress
             feature_lens = feature_lens.detach().cpu().tolist()
