@@ -6,7 +6,7 @@ from glob import glob
 from tqdm import tqdm 
 from sklearn.preprocessing import StandardScaler
 
-from config import PATH_TO_DETECT, PATH_TO_FEATURES, PATH_TO_LABELS, PARTITION_FILES
+from config import PATH_TO_FEATURES, PATH_TO_LABELS, PARTITION_FILES
 
 ################# GLOBAL UTILITY METHODS #############################################
 
@@ -93,12 +93,9 @@ def load_humor_subject(feature, subject_id, normalizer):
     '''
     # parse labels
     label_path = PATH_TO_LABELS['humor']
-    detect_path = PATH_TO_DETECT['humor']
     label_files = sorted(glob(os.path.join(label_path, subject_id + '/*.csv')))
-    detect_files = sorted(glob(os.path.join(detect_path, subject_id + '/*.csv')))
     assert len(label_files) > 0, f'Error: no available humor label files for coach "{subject_id}": "{label_files}".'
     label_df = pd.concat([pd.read_csv(label_file) for label_file in label_files])
-    detect_df = pd.concat([pd.read_csv(detect_file) for detect_file in detect_files])
 
     # idx of the data frame (column) where features start
     feature_idx = 2
@@ -131,10 +128,9 @@ def load_humor_subject(feature, subject_id, normalizer):
     # store
     # expand for compatibility with the dataset class
     labels = np.expand_dims(label_df.iloc[:,-1].values, -1)
-    detects = np.expand_dims(detect_df.iloc[:,-1].values, -1)
     metas = np.expand_dims(label_df.iloc[:,:-1].values, 1)
 
-    return features, labels, detects, metas
+    return features, labels, metas
 
 
 # --------------------------------------  stress ---------------------------------------------------------------#
@@ -301,14 +297,9 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
         return data
 
     print('Constructing data from scratch ...')
-    if task == 'humor':
-        data = {'train': {'feature': [], 'label': [], 'detect': [], 'meta': []},
-                'devel': {'feature': [], 'label': [], 'detect': [], 'meta': []},
-                'test': {'feature': [], 'label': [], 'detect': [], 'meta': []}}
-    else:
-        data = {'train': {'feature': [], 'label': [], 'meta': []},
-                'devel': {'feature': [], 'label': [], 'meta': []},
-                'test': {'feature': [], 'label': [], 'meta': []}}
+    data = {'train': {'feature': [], 'label': [], 'meta': []},
+            'devel': {'feature': [], 'label': [], 'meta': []},
+            'test': {'feature': [], 'label': [], 'meta': []}}
     subject2partition, partition2subject = get_data_partition(paths['partition'])
     print('Normalising data') if normalize else None 
     normalizer = fit_normalizer(task=task, feature=feature) if normalize else None
@@ -326,7 +317,7 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
                                                               apply_segmentation=apply_segmentation, win_len=win_len,
                                                               hop_len=hop_len)
             elif task == 'humor':
-                features, labels, detects, metas = load_humor_subject(feature=feature, subject_id=subject_id,
+                features, labels, metas = load_humor_subject(feature=feature, subject_id=subject_id,
                                                              normalizer=normalizer)
             elif task == 'reaction':
                 features, labels, metas = load_reaction_subject(feature=feature, subject_id=subject_id,
@@ -334,8 +325,6 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
 
             data[partition]['feature'].extend(features)
             data[partition]['label'].extend(labels)
-            if task == 'humor':
-                data[partition]['detect'].extend(detects)
             data[partition]['meta'].extend(metas)
 
     if save:  # save loaded and preprocessed data
