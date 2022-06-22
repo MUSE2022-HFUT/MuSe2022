@@ -396,17 +396,15 @@ class TE(nn.Module):
 
 class TEMMA(nn.Module):
 
-    def __init__(self, opts, num_features):
+    def __init__(self, opts, num_features, len_feature):
         super(TEMMA, self).__init__()
 
-        self.modal_num = opts.modal_num
-        assert self.modal_num > 1, 'TEMMA model is only used for multiple feature streams ...'
+        self.modal_num = len(num_features)
 
         # self.mask_a_length = [int(l) for l in opts.mask_a_length.split(',')]
         # self.mask_b_length = [int(l) for l in opts.mask_b_length.split(',')]
 
         self.num_features = num_features
-        self.modal_num = opts.modal_num
         self.N = opts.block_num
         self.dropout_mmatten = opts.dropout_mmatten
         self.dropout_mtatten = opts.dropout_mtatten
@@ -434,7 +432,7 @@ class TEMMA(nn.Module):
 
         self.temma = MultiModalEncoder(multimodal_encoder_layer, self.N, self.modal_num)
         self.regress = nn.Sequential(
-            nn.Linear(self.d_model * self.modal_num * 4, self.d_model * self.modal_num // 2),
+            nn.Linear(self.d_model * self.modal_num * len_feature, self.d_model * self.modal_num // 2),
             nn.ReLU(),
             nn.Linear(self.d_model * self.modal_num // 2, opts.ntarget),
         )
