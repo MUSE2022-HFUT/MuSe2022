@@ -469,3 +469,34 @@ class TEMMA(nn.Module):
         batch_size = x.shape[0]
         x = x.reshape(batch_size, -1)
         return self.final_activation(self.regress(x))
+
+class TEMMA_Ensemble(nn.Module):
+    def __init__(self,opts,models,model_num) :
+        super(TEMMA_Ensemble,self).__init__()
+        self.modal_num = opts.modal_num
+        self.d_model = opts.d_model
+        
+        self.final_activation = ACTIVATION_FUNCTIONS[opts.task]()
+
+        self.regress=nn.Sequential(
+            nn.Linear(in_features=model_num,out_features=128),
+            nn.ReLU(),
+            nn.Linear(in_features=128,out_features=1)
+        )
+
+        self.models=models
+        self.model_num=model_num
+        
+    def forward(self,x):
+        with torch.no_grad():
+            preds=[]
+            for i in range(self.model_num):
+                model=torch.load(self.models[i])
+                pred=model(x)
+                preds.append(pred)
+
+        emsenble_pred=torch.cat((preds[0],preds[1],preds[2],preds[3]),dim=1)
+        #emsenble_pred=torch.Tensor(preds)
+        emsenble_input=self.regress(emsenble_pred)
+
+        return self.final_activation(emsenble_input)
