@@ -13,7 +13,7 @@ from utils import Logger, seed_worker, log_results
 from train import train_model
 from eval import evaluate, calc_ccc, calc_auc, mean_ccc,mean_pearsons 
 from model import TEMMA
-from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss
+from loss import CCCLoss, WrappedBCELoss, WrappedMSELoss, WrappedFocalLoss
 from dataset import MuSeDataset, custom_collate_fn
 from data_parser import load_data
 
@@ -102,7 +102,8 @@ def get_loss_fn(task):
     if task == 'stress':
         return CCCLoss(), 'CCC'
     elif task == 'humor':
-        return WrappedBCELoss(), 'Binary Crossentropy'
+        # return WrappedBCELoss(), 'Binary Crossentropy'
+        return WrappedFocalLoss(), 'Focal Loss'
     elif task == 'reaction':
         return WrappedMSELoss(reduction='mean'), 'MSE'
 
@@ -194,10 +195,10 @@ def main(args):
         model_file = args.eval_model
         model = torch.load(model_file, map_location=torch.device('cuda') if torch.cuda.is_available()
         else torch.device('cpu'))
-        _, valid_score = evaluate(args.task, model, data_loader['devel'], loss_fn=loss_fn, eval_fn=eval_fn,
+        valid_loss, valid_score = evaluate(args.task, model, data_loader['devel'], loss_fn=loss_fn, eval_fn=eval_fn,
                                   use_gpu=args.use_gpu)
         print(f'Evaluating {model_file}:')
-        print(f'[Val {eval_str}]: {valid_score:7.4f}')
+        print(f'[Val {eval_str}]: {valid_loss:7.4f} {valid_score:7.4f}')
         if not args.predict:
             _, test_score = evaluate(args.task, model, data_loader['test'], loss_fn=loss_fn, eval_fn=eval_fn,
                                      use_gpu=args.use_gpu)
@@ -205,7 +206,8 @@ def main(args):
 
     if args.predict:  # Make predictions for the test partition; this option is set if there are no test labels
         print('Predicting test samples...')
-        best_model = torch.load(model_file)
+        best_model = torch.load(model_file, map_location=torch.device('cuda') if torch.cuda.is_available()
+        else torch.device('cpu'))
         evaluate(args.task, best_model, data_loader['test'], loss_fn=loss_fn, eval_fn=eval_fn,
                  use_gpu=args.use_gpu, predict=True, prediction_path=args.paths['predict'], filename='predictions.csv')
 

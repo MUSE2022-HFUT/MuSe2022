@@ -323,14 +323,14 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
                 features, labels, metas = load_reaction_subject(feature=feature, subject_id=subject_id,
                                                                 normalizer=normalizer)
 
-            if partition == 'devel':
-                data['train']['feature'].extend(features)
-                data['train']['label'].extend(labels)
-                data['train']['meta'].extend(metas)
-            elif partition == 'train':
-                data['devel']['feature'].extend(features)
-                data['devel']['label'].extend(labels)
-                data['devel']['devel'].extend(metas)
+            # if partition == 'devel':
+            #     data['train']['feature'].extend(features)
+            #     data['train']['label'].extend(labels)
+            #     data['train']['meta'].extend(metas)
+            # elif partition == 'train':
+            #     data['devel']['feature'].extend(features)
+            #     data['devel']['label'].extend(labels)
+            #     data['devel']['meta'].extend(metas)
             data[partition]['feature'].extend(features)
             data[partition]['label'].extend(labels)
             data[partition]['meta'].extend(metas)
