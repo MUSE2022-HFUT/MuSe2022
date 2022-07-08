@@ -331,9 +331,19 @@ def load_data(task, paths, feature, emo_dim, normalize=True, win_len=200, hop_le
             #     data['devel']['feature'].extend(features)
             #     data['devel']['label'].extend(labels)
             #     data['devel']['meta'].extend(metas)
-            data[partition]['feature'].extend(features)
-            data[partition]['label'].extend(labels)
-            data[partition]['meta'].extend(metas)
+            if partition != 'test':
+                length = len(features)
+                train_rate = int(length * 0.7)
+                data['train']['feature'].extend(features[0:train_rate])
+                data['train']['label'].extend(labels[0:train_rate])
+                data['train']['meta'].extend(metas[0:train_rate])
+                data['devel']['feature'].extend(features[train_rate:])
+                data['devel']['label'].extend(labels[train_rate:])
+                data['devel']['meta'].extend(metas[train_rate:])
+            else:
+                data[partition]['feature'].extend(features)
+                data[partition]['label'].extend(labels)
+                data[partition]['meta'].extend(metas)
 
     if save:  # save loaded and preprocessed data
         print('Saving data...')
