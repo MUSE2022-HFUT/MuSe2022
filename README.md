@@ -1,3 +1,7 @@
+# Hybrid Multimodal Feature Extraction, Mining and Fusion for Sentiment Analysis
+
+[Submitted paper](https://arxiv.org/pdf/2208.03051.pdf)
+
 # MuSe-2022 Baseline Model: LSTM Regressor
 
 [Homepage](https://www.muse-challenge.org) || [Baseline Paper](https://www.researchgate.net/publication/359875358_The_MuSe_2022_Multimodal_Sentiment_Analysis_Challenge_Humor_Emotional_Reactions_and_Stress)
